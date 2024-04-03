@@ -129,6 +129,7 @@ def add_user(message):
         bot.reply_to(message, "Эта команда доступна только администраторам.")
 
 
+
 @bot.message_handler(commands=['pay'])
 def pay_membership_fee(message):
     chat_id = message.chat.id
@@ -138,12 +139,17 @@ def pay_membership_fee(message):
             payment_amount = float(message.text.split()[2])
             users = load_users()
             if user_id in users:
-                username = users[user_id].username  # Получаем имя пользователя из базы
+                username = users[user_id].username
                 users[user_id].balance += payment_amount
                 users[user_id].last_payment = datetime.now()
                 users[user_id].last_update = datetime.now()
                 save_users(users)
-                bot.reply_to(message, f"Сумма в размере {payment_amount}р. успешно внесена пользователю {username} с id {user_id}.")
+
+                # Отправляем сообщение каждому администратору
+                for admin_chat_id in ADMIN_CHAT_ID.split(','):
+                    bot.send_message(admin_chat_id, f"Пользователь {username} с id {user_id} внес сумму в размере {payment_amount}.")
+
+                bot.reply_to(message, f"Сумма в размере {payment_amount} успешно внесена пользователю {username} с id {user_id}.")
             else:
                 bot.reply_to(message, "Пользователь с таким id не найден.")
         except (IndexError, ValueError):
