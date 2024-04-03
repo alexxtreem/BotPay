@@ -55,6 +55,11 @@ def recalculate_monthly_fee(users):
                 user.last_update = datetime.now()
     save_users(users)
 
+@bot.message_handler(commands=['get_chat_id'])
+def get_chat_id(message):
+    chat_id = message.chat.id
+    bot.reply_to(message, f"Ваш chat ID: {chat_id}")
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     chat_id = message.chat.id
