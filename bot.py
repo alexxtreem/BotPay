@@ -49,14 +49,21 @@ def get_current_month():
 
 def recalculate_monthly_fee(users):
     current_month = get_current_month()
-    for user in users.values():
-        if user.last_update is None or (user.last_payment is not None and user.last_update.month != current_month):
+    if current_month == 1:  # Если начался новый год
+        for user in users.values():
             if user.last_payment is not None:
                 months_since_payment = (datetime.now() - user.last_payment).days // 30
                 if months_since_payment > 0:
                     user.balance -= MEMBERSHIP_FEE * months_since_payment
-            user.last_update = datetime.now()
-    save_users(users)
+        save_users(users)
+    else:  # В других месяцах просто пересчитываем по обычному алгоритму
+        for user in users.values():
+            if user.last_update is None or user.last_update.month != current_month:
+                months_since_payment = (datetime.now() - user.last_payment).days // 30
+                if months_since_payment > 0:
+                    user.balance -= MEMBERSHIP_FEE * months_since_payment
+                    user.last_update = datetime.now()
+        save_users(users)
 
 @bot.message_handler(commands=['get_chat_id'])
 def get_chat_id(message):
