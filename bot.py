@@ -52,14 +52,19 @@ def get_current_month():
 def recalculate_monthly_fee(users):
     global recalculation_done
     current_day = datetime.now().day
+    current_date = datetime.now().date()
     if current_day == RECALCULATION_DAY and not recalculation_done:
         for user in users.values():
             if user.balance > 0:  # Проверяем, что у пользователя есть средства на счету
                 user.balance -= MEMBERSHIP_FEE
         save_users(users)
         recalculation_done = True
+        # Добавляем текущую дату в качестве даты последнего пересчета для всех пользователей
+        for user in users.values():
+            user.last_update = current_date
     elif current_day != RECALCULATION_DAY:
         recalculation_done = False
+
 
 
 def check_recalculation():
