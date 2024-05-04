@@ -50,6 +50,7 @@ def get_current_month():
     return datetime.now().month
 
 def recalculate_monthly_fee(users):
+    global recalculation_done  # Объявляем переменную как глобальную
     current_day = datetime.now().day
     if current_day == RECALCULATION_DAY and not recalculation_done:
         for user in users.values():
@@ -61,6 +62,7 @@ def recalculate_monthly_fee(users):
         recalculation_done = True
     elif current_day != RECALCULATION_DAY:
         recalculation_done = False
+
 
 def check_recalculation():
     global recalculation_done
