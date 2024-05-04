@@ -171,7 +171,8 @@ def check_balance(message):
         users = load_users()
         response = "Баланс пользователей:\n"
         for user_id, user in users.items():
-            response += f"ID: {user_id}, Имя {user.username}, баланс: {user.balance}р.\n"
+            last_payment_date = user.last_payment.strftime("%Y-%m-%d") if user.last_payment else "Никогда"
+            response += f"ID: {user_id}, Имя: {user.username}, Баланс: {user.balance}, Дата оплты: {last_payment_date}\n"
         bot.reply_to(message, response)
     else:
         bot.reply_to(message, "Эта команда доступна только администраторам.")
