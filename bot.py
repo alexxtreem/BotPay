@@ -3,12 +3,15 @@ import os
 import pickle
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import time
 
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
 MEMBERSHIP_FEE = float(os.getenv("MEMBERSHIP_FEE"))
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
+RECALCULATION_DAY = int(os.getenv("RECALCULATION_DAY"))
+recalculation_done = False
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -30,9 +33,8 @@ def load_users():
     else:
         return {}
 
-
 def is_admin(chat_id):
-    admin_chat_ids = ADMIN_CHAT_ID.split(',')  # Разделение строкового значения на список
+    admin_chat_ids = ADMIN_CHAT_ID.split(',')
     return str(chat_id) in admin_chat_ids
 
 def generate_user_id(users):
@@ -48,22 +50,27 @@ def get_current_month():
     return datetime.now().month
 
 def recalculate_monthly_fee(users):
-    current_month = get_current_month()
-    if current_month == 1:  # Если начался новый год
+    current_day = datetime.now().day
+    if current_day == RECALCULATION_DAY and not recalculation_done:
         for user in users.values():
             if user.last_payment is not None:
                 months_since_payment = (datetime.now() - user.last_payment).days // 30
                 if months_since_payment > 0:
                     user.balance -= MEMBERSHIP_FEE * months_since_payment
         save_users(users)
-    else:  # В других месяцах просто пересчитываем по обычному алгоритму
-        for user in users.values():
-            if user.last_update is None or user.last_update.month != current_month:
-                months_since_payment = (datetime.now() - user.last_payment).days // 30
-                if months_since_payment > 0:
-                    user.balance -= MEMBERSHIP_FEE * months_since_payment
-                    user.last_update = datetime.now()
-        save_users(users)
+        recalculation_done = True
+    elif current_day != RECALCULATION_DAY:
+        recalculation_done = False
+
+def check_recalculation():
+    global recalculation_done
+    current_day = datetime.now().day
+    if current_day == RECALCULATION_DAY and not recalculation_done:
+        users = load_users()
+        recalculate_monthly_fee(users)
+        recalculation_done = True
+    elif current_day != RECALCULATION_DAY:
+        recalculation_done = False
 
 @bot.message_handler(commands=['get_chat_id'])
 def get_chat_id(message):
@@ -135,8 +142,6 @@ def add_user(message):
     else:
         bot.reply_to(message, "Эта команда доступна только администраторам.")
 
-
-
 @bot.message_handler(commands=['pay'])
 def pay_membership_fee(message):
     chat_id = message.chat.id
@@ -172,11 +177,12 @@ def check_balance(message):
         response = "Баланс пользователей:\n"
         for user_id, user in users.items():
             last_payment_date = user.last_payment.strftime("%Y-%m-%d") if user.last_payment else "Никогда"
-            response += f"ID: {user_id}, Имя: {user.username}, Баланс: {user.balance}, Дата оплты: {last_payment_date}\n"
+            response += f"ID: {user_id}, Имя: {user.username}, Баланс: {user.balance}, Дата оплаты: {last_payment_date}\n"
         bot.reply_to(message, response)
     else:
         bot.reply_to(message, "Эта команда доступна только администраторам.")
 
-recalculate_monthly_fee(load_users())
-
-bot.polling()
+while True:
+    check_recalculation()
+    bot.polling()
+    time.sleep(60)  # Проверка каждую минуту
