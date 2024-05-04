@@ -55,13 +55,11 @@ def recalculate_monthly_fee(users):
     current_date = datetime.now().date()
     if current_day == RECALCULATION_DAY and not recalculation_done:
         for user in users.values():
-            if user.balance > 0:  # Проверяем, что у пользователя есть средства на счету
+            if user.balance > 0 and user.last_update != current_date:  # Проверяем, что у пользователя есть средства на счету и дата последнего пересчета не совпадает с текущей датой
                 user.balance -= MEMBERSHIP_FEE
+                user.last_update = current_date  # Записываем текущую дату как дату последнего пересчета
         save_users(users)
         recalculation_done = True
-        # Добавляем текущую дату в качестве даты последнего пересчета для всех пользователей
-        for user in users.values():
-            user.last_update = current_date
     elif current_day != RECALCULATION_DAY:
         recalculation_done = False
 
@@ -83,6 +81,7 @@ def check_recalculation():
             recalculation_done = True
     elif current_day != RECALCULATION_DAY:
         recalculation_done = False
+
 
 
 
