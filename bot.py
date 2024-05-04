@@ -16,11 +16,12 @@ recalculation_done = False
 bot = telebot.TeleBot(TOKEN)
 
 class User:
-    def __init__(self, username, balance=0, last_payment=None, last_update=None):
+    def __init__(self, username, balance=0, last_payment=None, last_update=None, recalculation_done=False):
         self.username = username
         self.balance = balance
         self.last_payment = last_payment
         self.last_update = last_update
+        self.recalculation_done = recalculation_done
 
 def save_users(users):
     with open("db.dat", "wb") as f:
@@ -50,18 +51,17 @@ def get_current_month():
     return datetime.now().month
 
 def recalculate_monthly_fee(users):
-    global recalculation_done
     current_day = datetime.now().day
     current_date = datetime.now().date()
-    if current_day == RECALCULATION_DAY and not recalculation_done:
+    if current_day == RECALCULATION_DAY:
         for user in users.values():
-            if user.balance > 0 and user.last_update != current_date:  # Проверяем, что у пользователя есть средства на счету и дата последнего пересчета не совпадает с текущей датой
+            if user.balance > 0 and not user.recalculation_done:  # Проверяем, что у пользователя есть средства на счету и пересчет не был выполнен
                 user.balance -= MEMBERSHIP_FEE
-                user.last_update = current_date  # Записываем текущую дату как дату последнего пересчета
+                user.recalculation_done = True  # Устанавливаем флаг, что пересчет выполнен
         save_users(users)
-        recalculation_done = True
-    elif current_day != RECALCULATION_DAY:
-        recalculation_done = False
+        # Обновляем дату последнего пересчета для всех пользователей
+        for user in users.values():
+            user.last_update = current_date
 
 
 
