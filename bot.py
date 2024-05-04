@@ -50,18 +50,20 @@ def get_current_month():
     return datetime.now().month
 
 def recalculate_monthly_fee(users):
-    global recalculation_done  # Объявляем переменную как глобальную
+    global recalculation_done
     current_day = datetime.now().day
     if current_day == RECALCULATION_DAY and not recalculation_done:
         for user in users.values():
             if user.last_payment is not None:
                 months_since_payment = (datetime.now() - user.last_payment).days // 30
                 if months_since_payment > 0:
-                    user.balance -= MEMBERSHIP_FEE * months_since_payment
+                    if user.balance > 0:  # Добавляем проверку на баланс пользователя
+                        user.balance -= min(MEMBERSHIP_FEE * months_since_payment, user.balance)
         save_users(users)
         recalculation_done = True
     elif current_day != RECALCULATION_DAY:
         recalculation_done = False
+
 
 
 def check_recalculation():
