@@ -71,15 +71,19 @@ def check_recalculation():
     global recalculation_done
     current_day = datetime.now().day
     current_date = datetime.now().date()
-    if current_day == RECALCULATION_DAY and not recalculation_done:
+    if current_day == RECALCULATION_DAY:
         users = load_users()
+        recalculation_required = False
         for user in users.values():
             if user.last_update != current_date:  # Проверяем, что последний пересчет не был сегодня
-                recalculate_monthly_fee(users)
-                recalculation_done = True
-                break  # Прерываем цикл после первого пересчета
+                recalculation_required = True
+                break  # Если хотя бы у одного пользователя не было пересчета сегодня, выходим из цикла
+        if recalculation_required and not recalculation_done:
+            recalculate_monthly_fee(users)
+            recalculation_done = True
     elif current_day != RECALCULATION_DAY:
         recalculation_done = False
+
 
 
 @bot.message_handler(commands=['get_chat_id'])
