@@ -4,6 +4,7 @@ import pickle
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import time
+import threading
 
 load_dotenv()
 
@@ -81,6 +82,10 @@ def check_recalculation():
         recalculation_done = False
 
 
+def recalculation_loop():
+    while True:
+        check_recalculation()
+        time.sleep(3600) #Проверка каждый час
 
 
 @bot.message_handler(commands=['get_chat_id'])
@@ -165,7 +170,7 @@ def pay_membership_fee(message):
                 username = users[user_id].username
                 users[user_id].balance += payment_amount
                 users[user_id].last_payment = datetime.now()
-                users[user_id].last_update = datetime.now()
+                # users[user_id].last_update = datetime.now() Не корректный пересчет из-зи занесения этого поля при оплате в базу
                 save_users(users)
 
                 # Отправляем сообщение каждому администратору
@@ -193,7 +198,12 @@ def check_balance(message):
     else:
         bot.reply_to(message, "Эта команда доступна только администраторам.")
 
-while True:
-    check_recalculation()
-    bot.polling()
-    time.sleep(360)  # Проверка каждую минуту
+# Запускаем функцию в отдельном потоке
+threading.Thread(target=recalculation_loop, daemon=True).start()
+
+# Основной поток запускает бота
+bot.polling()
+#while True:
+#        check_recalculation()
+#        bot.polling()
+#        time.sleep(3600)  # Проверка каждую минуту
